@@ -16,25 +16,9 @@
           <h1 class="text-lg font-bold tracking-tight">Cashflow Harian</h1>
           <p id="syncStatus" class="text-[11px] text-indigo-200">Menghubungkan...</p>
         </div>
-        <div class="flex gap-1.5">
-          <button onclick="toggleConfig()" title="Atur URL API" class="text-xs bg-indigo-500/80 hover:bg-indigo-400 px-2.5 py-1.5 rounded-full transition font-medium">
-            ⚙️
-          </button>
-          <button onclick="loadSummary()" class="text-xs bg-indigo-500 hover:bg-indigo-400 px-3 py-1.5 rounded-full transition font-medium">
-            ↻ Refresh
-          </button>
-        </div>
-      </div>
-
-      <!-- Panel Pengaturan URL API (Bisa ganti URL langsung dari HP/Browser) -->
-      <div id="configPanel" class="hidden mb-4 bg-indigo-800/80 rounded-2xl p-3 border border-indigo-400/30 text-xs space-y-2">
-        <label class="block text-indigo-100 font-semibold">URL Web App Google Apps Script (/exec):</label>
-        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
-          class="w-full px-2.5 py-1.5 rounded-lg text-slate-800 bg-white focus:outline-none" />
-        <div class="flex justify-end gap-2">
-          <button type="button" onclick="resetApiUrl()" class="px-2.5 py-1 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-indigo-200">Default</button>
-          <button type="button" onclick="saveApiUrl()" class="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-semibold">Simpan & Muat</button>
-        </div>
+        <button onclick="loadSummary()" class="text-xs bg-indigo-500 hover:bg-indigo-400 px-3 py-1.5 rounded-full transition font-medium">
+          ↻ Refresh
+        </button>
       </div>
 
       <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
@@ -144,35 +128,8 @@
   </div>
 
   <script>
-    // TEMPEL URL WEB APP (/exec) TERBARU ANDA DI SINI (yang berawalan AKfycbyJmfPqpR1m2sQxxUCi2naCalvERcG9c3...)
-    const DEFAULT_SCRIPT_URL = 'GANTI_DENGAN_URL_WEB_APP_AKfycbyJmfPqpR1m2sQxxUCi2naCalvERcG9c3_LENGKAP_ANDA';
-
-    function getScriptUrl() {
-      return localStorage.getItem('cashflow_script_url') || DEFAULT_SCRIPT_URL;
-    }
-
-    function toggleConfig() {
-      const panel = document.getElementById('configPanel');
-      panel.classList.toggle('hidden');
-      document.getElementById('apiUrlInput').value = getScriptUrl();
-    }
-
-    function saveApiUrl() {
-      const val = document.getElementById('apiUrlInput').value.trim();
-      if (!val.startsWith('https://script.google.com/')) {
-        alert('URL harus berawalan https://script.google.com/...');
-        return;
-      }
-      localStorage.setItem('cashflow_script_url', val);
-      document.getElementById('configPanel').classList.add('hidden');
-      loadSummary();
-    }
-
-    function resetApiUrl() {
-      localStorage.removeItem('cashflow_script_url');
-      document.getElementById('apiUrlInput').value = DEFAULT_SCRIPT_URL;
-      loadSummary();
-    }
+    // TEMPEL URL WEB APP (/exec) TERBARU DARI APPS SCRIPT ANDA DI SINI
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJmfPqpR1m2sQxxUCi2naCalvERcG9c3.../exec';
 
     const KATEGORI_MAP = {
       Pengeluaran: [
@@ -191,7 +148,6 @@
 
     const formatRp = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
 
-    // Set default tanggal hari ini
     document.getElementById('tanggal').value = new Date().toLocaleDateString('en-CA');
 
     function populateKategori(tipe) {
@@ -222,20 +178,12 @@
 
     async function loadSummary() {
       const statusEl = document.getElementById('syncStatus');
-      const scriptUrl = getScriptUrl();
-
-      if (!scriptUrl || scriptUrl.includes('GANTI_DENGAN_URL')) {
-        statusEl.textContent = 'Klik ikon ⚙️ untuk menempel URL Web App';
-        document.getElementById('configPanel').classList.remove('hidden');
-        return;
-      }
-
       statusEl.textContent = 'Menyinkronkan...';
       try {
-        const res = await fetch(`${scriptUrl}?t=${Date.now()}`);
+        const res = await fetch(`${SCRIPT_URL}?t=${Date.now()}`);
         const data = await res.json();
         if (data.status !== 'success') {
-          statusEl.textContent = 'Gagal: ' + (data.message || 'Error');
+          statusEl.textContent = 'Gagal membaca data';
           return;
         }
 
@@ -244,7 +192,6 @@
         document.getElementById('outAmount').textContent = formatRp(data.pengeluaran);
         document.getElementById('todayAmount').textContent = formatRp(data.hariIni);
 
-        // Render breakdown kategori
         const catContainer = document.getElementById('categoryList');
         const totalOut = data.pengeluaran || 1;
         catContainer.innerHTML = data.kategori.map(item => {
@@ -262,7 +209,6 @@
           `;
         }).join('');
 
-        // Render transaksi terakhir
         const recentContainer = document.getElementById('recentList');
         if (!data.recent || !data.recent.length) {
           recentContainer.innerHTML = '<p class="text-xs text-slate-400">Belum ada transaksi.</p>';
@@ -293,12 +239,6 @@
 
     document.getElementById('txForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const scriptUrl = getScriptUrl();
-      if (!scriptUrl || scriptUrl.includes('GANTI_DENGAN_URL')) {
-        alert('Tempel URL Web App (/exec) terlebih dahulu di menu ⚙️.');
-        return;
-      }
-
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = 'Menyimpan...';
@@ -313,7 +253,7 @@
       };
 
       try {
-        await fetch(scriptUrl, {
+        await fetch(SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
@@ -332,7 +272,6 @@
       }
     });
 
-    // Inisialisasi awal
     populateKategori('Pengeluaran');
     loadSummary();
   </script>
