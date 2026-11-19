@@ -12,14 +12,17 @@
   <div class="bg-indigo-600 text-white pt-6 pb-16 px-4 rounded-b-3xl shadow-md">
     <div class="max-w-md mx-auto">
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-lg font-bold tracking-tight">Cashflow Harian</h1>
-        <button onclick="loadSummary()" class="text-xs bg-indigo-500 hover:bg-indigo-400 px-3 py-1.5 rounded-full transition">
+        <div>
+          <h1 class="text-lg font-bold tracking-tight">Cashflow Harian</h1>
+          <p id="syncStatus" class="text-[11px] text-indigo-200">Menghubungkan...</p>
+        </div>
+        <button onclick="loadSummary()" class="text-xs bg-indigo-500 hover:bg-indigo-400 px-3 py-1.5 rounded-full transition font-medium">
           ↻ Refresh
         </button>
       </div>
 
       <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-        <p class="text-xs text-indigo-100">Sisa Cashflow Bulan Ini</p>
+        <p class="text-xs text-indigo-100">Sisa Cashflow / Saldo Akhir</p>
         <p id="netAmount" class="text-2xl font-extrabold mt-0.5">Rp 0</p>
         
         <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/15 text-xs">
@@ -32,7 +35,7 @@
             <span id="outAmount" class="font-semibold text-rose-300">Rp 0</span>
           </div>
           <div>
-            <span class="text-indigo-200 block">Hari Ini</span>
+            <span class="text-indigo-200 block">Keluar Hari Ini</span>
             <span id="todayAmount" class="font-semibold text-amber-200">Rp 0</span>
           </div>
         </div>
@@ -61,6 +64,7 @@
         <input type="number" id="nominal" required placeholder="0" min="1"
           class="w-full text-xl font-bold px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         <div class="flex gap-1.5 mt-2 flex-wrap">
+          <button type="button" onclick="addNominal(5000)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+5rb</button>
           <button type="button" onclick="addNominal(10000)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+10rb</button>
           <button type="button" onclick="addNominal(20000)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+20rb</button>
           <button type="button" onclick="addNominal(50000)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+50rb</button>
@@ -86,17 +90,10 @@
         </div>
       </div>
 
-      <!-- Kategori -->
+      <!-- Kategori (Dinamis mengikuti Tipe) -->
       <div>
         <label class="block text-xs font-semibold text-slate-500 mb-1">Kategori</label>
         <select id="kategori" class="w-full text-sm px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option value="Makan & Kopi">Makan & Kopi</option>
-          <option value="Transport & BBM">Transport & BBM</option>
-          <option value="Tagihan & Utilitas">Tagihan & Utilitas</option>
-          <option value="Belanja Harian">Belanja Harian</option>
-          <option value="Hiburan & Hobi">Hiburan & Hobi</option>
-          <option value="Gaji / Pemasukan">Gaji / Pemasukan</option>
-          <option value="Lainnya">Lainnya</option>
         </select>
       </div>
 
@@ -113,9 +110,9 @@
       </button>
     </form>
 
-    <!-- Breakdown Kategori -->
+    <!-- Breakdown Kategori Pengeluaran -->
     <div class="mt-6 bg-white rounded-2xl shadow-sm p-5 border border-slate-200/60">
-      <h2 class="text-sm font-bold text-slate-700 mb-3">Pengeluaran Bulan Ini per Kategori</h2>
+      <h2 class="text-sm font-bold text-slate-700 mb-3">Pengeluaran per Kategori</h2>
       <div id="categoryList" class="space-y-2.5 text-xs text-slate-600">
         <p class="text-slate-400">Memuat data...</p>
       </div>
@@ -131,13 +128,35 @@
   </div>
 
   <script>
-    // GANTI DENGAN URL WEB APP APPS SCRIPT ANDA
+    // TEMPEL URL WEB APP (/exec) TERBARU ANDA DI SINI
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCylzQ79V3Oc8b7t3xS5Hx2tswiWNbi9TrskpP5tp0n3JfkpLYuzcnCa_8WSrsgfMm/exec';
+
+    const KATEGORI_MAP = {
+      Pengeluaran: [
+        'Makan & Kopi',
+        'Transport & BBM',
+        'Tagihan & Utilitas',
+        'Belanja Harian',
+        'Hiburan & Hobi',
+        'Lainnya'
+      ],
+      Pemasukan: [
+        'Gaji / Pemasukan',
+        'Lainnya'
+      ]
+    };
 
     const formatRp = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
 
-    // Set default tanggal hari ini (WIB)
+    // Set default tanggal hari ini
     document.getElementById('tanggal').value = new Date().toLocaleDateString('en-CA');
+
+    function populateKategori(tipe) {
+      const select = document.getElementById('kategori');
+      select.innerHTML = KATEGORI_MAP[tipe]
+        .map(k => `<option value="${k}">${k}</option>`)
+        .join('');
+    }
 
     function setTipe(tipe) {
       document.getElementById('tipe').value = tipe;
@@ -146,12 +165,11 @@
       if (tipe === 'Pengeluaran') {
         btnOut.className = 'py-2 text-sm font-semibold rounded-lg bg-rose-500 text-white shadow-sm transition';
         btnIn.className = 'py-2 text-sm font-semibold rounded-lg text-slate-600 transition';
-        document.getElementById('kategori').value = 'Makan & Kopi';
       } else {
         btnIn.className = 'py-2 text-sm font-semibold rounded-lg bg-emerald-500 text-white shadow-sm transition';
         btnOut.className = 'py-2 text-sm font-semibold rounded-lg text-slate-600 transition';
-        document.getElementById('kategori').value = 'Gaji / Pemasukan';
       }
+      populateKategori(tipe);
     }
 
     function addNominal(val) {
@@ -160,10 +178,16 @@
     }
 
     async function loadSummary() {
+      const statusEl = document.getElementById('syncStatus');
+      statusEl.textContent = 'Menyinkronkan...';
       try {
-        const res = await fetch(SCRIPT_URL);
+        // Tambahkan timestamp agar browser tidak membaca cache lama
+        const res = await fetch(`${SCRIPT_URL}?t=${Date.now()}`);
         const data = await res.json();
-        if (data.status !== 'success') return;
+        if (data.status !== 'success') {
+          statusEl.textContent = 'Gagal membaca data';
+          return;
+        }
 
         document.getElementById('netAmount').textContent = formatRp(data.net);
         document.getElementById('inAmount').textContent = formatRp(data.pemasukan);
@@ -174,7 +198,7 @@
         const catContainer = document.getElementById('categoryList');
         const totalOut = data.pengeluaran || 1;
         catContainer.innerHTML = data.kategori.map(item => {
-          const pct = Math.min(100, Math.round((item.total / totalOut) * 100));
+          const pct = data.pengeluaran > 0 ? Math.min(100, Math.round((item.total / totalOut) * 100)) : 0;
           return `
             <div>
               <div class="flex justify-between mb-1">
@@ -190,26 +214,30 @@
 
         // Render transaksi terakhir
         const recentContainer = document.getElementById('recentList');
-        if (!data.recent.length) {
+        if (!data.recent || !data.recent.length) {
           recentContainer.innerHTML = '<p class="text-xs text-slate-400">Belum ada transaksi.</p>';
-          return;
-        }
-        recentContainer.innerHTML = data.recent.map(tx => {
-          const isOut = tx.tipe === 'Pengeluaran';
-          return `
-            <div class="py-2.5 flex justify-between items-center">
-              <div>
-                <p class="font-semibold text-slate-800 text-xs">${tx.kategori} <span class="text-slate-400 font-normal">• ${tx.tanggal}</span></p>
-                <p class="text-xs text-slate-500">${tx.catatan || tx.dompet}</p>
+        } else {
+          recentContainer.innerHTML = data.recent.map(tx => {
+            const isOut = tx.tipe === 'Pengeluaran';
+            return `
+              <div class="py-2.5 flex justify-between items-center">
+                <div>
+                  <p class="font-semibold text-slate-800 text-xs">${tx.kategori} <span class="text-slate-400 font-normal">• ${tx.tanggal}</span></p>
+                  <p class="text-xs text-slate-500">${tx.catatan ? tx.catatan + ' • ' : ''}${tx.dompet}</p>
+                </div>
+                <span class="font-bold text-xs ${isOut ? 'text-rose-600' : 'text-emerald-600'}">
+                  ${isOut ? '-' : '+'}${formatRp(tx.nominal)}
+                </span>
               </div>
-              <span class="font-bold text-xs ${isOut ? 'text-rose-600' : 'text-emerald-600'}">
-                ${isOut ? '-' : '+'}${formatRp(tx.nominal)}
-              </span>
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
+        }
+
+        const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        statusEl.textContent = `Tersinkronisasi • ${now}`;
       } catch (err) {
         console.error('Gagal memuat summary:', err);
+        statusEl.textContent = 'Koneksi gagal';
       }
     }
 
@@ -240,7 +268,7 @@
         document.getElementById('catatan').value = '';
         btn.textContent = 'Tersimpan ✓';
         setTimeout(() => { btn.textContent = 'Simpan Transaksi'; btn.disabled = false; }, 1200);
-        setTimeout(loadSummary, 1000);
+        setTimeout(loadSummary, 1200);
       } catch (err) {
         alert('Gagal menyimpan transaksi: ' + err.message);
         btn.textContent = 'Simpan Transaksi';
@@ -248,6 +276,8 @@
       }
     });
 
+    // Inisialisasi awal
+    populateKategori('Pengeluaran');
     loadSummary();
   </script>
 </body>
