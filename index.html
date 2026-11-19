@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daily Cashflow Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- TEMPEL URL WEB APP (/exec) TERBARU ANDA DI ANTARA DUA TAG SCRIPT DI BAWAH INI -->
+  <script id="apiUrlSource" type="text/plain">https://script.google.com/macros/s/AKfycbyJmfPqpR1m2sQxxUCi2naCalvERcG9c3.../exec</script>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen pb-12">
 
@@ -128,8 +130,7 @@
   </div>
 
   <script>
-    // TEMPEL URL WEB APP (/exec) TERBARU DARI APPS SCRIPT ANDA DI SINI
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJmfPqpR1m2sQxxUCi2naCaIvERcG9c3cJJxODLmBNHAlfKxDJPpK3mAnfG-du-MzB/exec
+    const SCRIPT_URL = document.getElementById('apiUrlSource').textContent.replace(/\s+/g, '');
 
     const KATEGORI_MAP = {
       Pengeluaran: [
@@ -178,6 +179,10 @@
 
     async function loadSummary() {
       const statusEl = document.getElementById('syncStatus');
+      if (SCRIPT_URL.includes('...')) {
+        statusEl.textContent = 'URL API belum diganti lengkap';
+        return;
+      }
       statusEl.textContent = 'Menyinkronkan...';
       try {
         const res = await fetch(`${SCRIPT_URL}?t=${Date.now()}`);
